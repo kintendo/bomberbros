@@ -1,0 +1,6 @@
+
+7/12/2013
+forgot how to get rolling w/ socket & coffee
+npm install socket.io
+npm install coffee-script
+added index/app/server/package files
