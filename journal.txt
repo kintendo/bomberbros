@@ -1,6 +1,14 @@
+7/16/2013
+forgot @ to call class functions w/in class
+
+
+7/14/2013
+note: of vs. in! of used for objs vs. in for arr
 
 7/12/2013
 forgot how to get rolling w/ socket & coffee
 npm install socket.io
 npm install coffee-script
 added index/app/server/package files
+don't forget, git commit then push!
+starting to create some classes...

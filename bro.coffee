@@ -1,8 +1,6 @@
 class Bro
-	constructor: (@playerNum) ->
+	constructor: (@playerNum, @x_pos, @y_pos) ->
 		@numBombs = 2 		# default # of bombs at one time
-		@x_position = 0
-		@y_position = 0
 		@power = 2 			# default range of bomb
 
 	move: (direction)->

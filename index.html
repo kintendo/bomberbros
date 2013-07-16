@@ -2,22 +2,52 @@
 <html>
 <head>
 <script src="/socket.io/socket.io.js"></script>
-<script src="https://ajax.googleapis.com/ajax/libs/jquery/1.7.2/jquery.min.js"></script>
-<script src="//ajax.googleapis.com/ajax/libs/jqueryui/1.8.23/jquery-ui.min.js"></script>
+<script src="https://ajax.googleapis.com/ajax/libs/jquery/1.10.2/jquery.min.js"></script>
 <script src="//netdna.bootstrapcdn.com/twitter-bootstrap/2.3.2/js/bootstrap.min.js"></script>
-<script src="http://cdnjs.cloudflare.com/ajax/libs/coffee-script/1.3.3/coffee-script.min.js"></script>
+<script src="http://cdnjs.cloudflare.com/ajax/libs/coffee-script/1.6.3/coffee-script.min.js"></script>
 <link href="//netdna.bootstrapcdn.com/twitter-bootstrap/2.3.2/css/bootstrap-combined.min.css" rel="stylesheet">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 </head>
 <body>
+<select id="games">
+	
+</select>
+<button class="btn" onClick="join_game()">Join Game</button>
+<button class="btn" onClick="fetch_games()">Refresh List</button>
 
+<input id="input_create"></input>
+<button class="btn" onCLick="create_game()">Create Game</button>
 
 </body>
 
 <script type="text/coffeescript">
-	root = exports ? this
+	client = exports ? this
 	
 	socket = io.connect()
 
+	socket.on 'game_list', (data) ->
+		console.debug data
+		list = JSON.parse(data.list)
+		$("#games").html("")
+		for item in list
+			$("#games").append("<option>#{item}</option>")
+		$("#games").prop("size", list.length)
+
+	socket.on 'game_map', (data) ->
+		map = JSON.parse data.map
+		console.debug map
+
+
+	client.create_game = () ->
+		name = $("#input_create").val()
+		$("#input_create").val("")
+		socket.emit 'create_game', {name: name}
+	
+	client.join_game = () ->
+		name = $("#games").val()
+		socket.emit 'join_game', {name: name}
+	
+	client.fetch_games = () ->
+		socket.emit 'fetch_games', {}
 </script>
 </html>

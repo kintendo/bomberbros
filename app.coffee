@@ -4,7 +4,7 @@ http = require 'http'
 fs = require 'fs'
 
 app = http.createServer (req,res)->
-    fs.readFile "#{__dirname}/index.html", (err, data) ->
+	fs.readFile "#{__dirname}/index.html", (err, data) ->
 		if err
 			res.writeHead(500)
 			res.end('Error loading index.html')
@@ -17,3 +17,51 @@ app.listen process.env.PORT
 
 # logic accessible by all sockets
 # ==============================================================================
+
+Bro = require './bro.coffee'
+Game = require './game.coffee'
+games =  new Object
+
+io.sockets.on 'connection', (socket) ->
+
+	game = ""
+
+	send_game_list = () ->
+		game_list = []
+		for key of games
+			game_list.push(key)
+		socket.emit 'game_list', {list: JSON.stringify(game_list)}
+
+	send_game_list()
+
+	send_map = () ->
+		io.sockets.in(game.name).emit 'game_map', {map: JSON.stringify(game.map)}
+
+	socket.on 'create_game', (data) ->
+		console.log "client request make #{data.name}"
+		if not games[data.name]
+			game = games[data.name] = new Game(data.name)
+			game.addBro()
+			socket.join(game.name)
+			send_map() 
+		else
+			socket.emit 'error', {message: "already exists"}
+	
+	socket.on 'join_game', (data) ->
+		console.log "client req join #{data.name}"
+		if games[data.name]
+			game = games[data.name]
+			game.addBro()
+			socket.join(game.name)
+			send_map()
+		else
+			socket.emit 'error', {message: "doesn't exist"}
+
+	socket.on 'fetch_games', () ->
+		send_game_list()
+
+	socket.on 'move', (data) ->
+		# move this char that direction
+
+	socket.on 'plant', () ->
+		# attempt to plant bomb at this char's pos
