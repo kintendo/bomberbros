@@ -9,20 +9,68 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 </head>
 <body>
-<select id="games">
-	
-</select>
-<button class="btn" onClick="join_game()">Join Game</button>
-<button class="btn" onClick="fetch_games()">Refresh List</button>
 
-<input id="input_create"></input>
-<button class="btn" onCLick="create_game()">Create Game</button>
+	<select id="games"></select>
+	<button class="btn" onClick="join_game()">Join Game</button>
+	<button class="btn" onClick="fetch_games()">Refresh List</button>
+	<input id="input_create"></input>
+	<button class="btn" onCLick="create_game()">Create Game</button>
+
+	<br></br>
+
+	<canvas id="canvas"></canvas>
 
 </body>
 
 <script type="text/coffeescript">
+
 	client = exports ? this
-	
+
+	url = "http://dl.dropboxusercontent.com/u/261248/bmbro/"
+
+	canvas = $("#canvas")[0]
+	canvas.width = 13*50 #x-coord
+	canvas.height = 11*50 #y-coord
+	ctx = canvas.getContext("2d")
+
+	#load all images
+	frat = []
+	frat["bro_1_down"] = new Image()
+	frat["bro_1_down"].src = "#{url}bro_down.png"
+	frat["bro_1_up"] = new Image()
+	frat["bro_1_up"].src = "#{url}bro_up.png"
+	frat["bro_1_left"] = new Image()
+	frat["bro_1_left"].src = "#{url}bro_left.png"
+	frat["bro_1_right"] = new Image()
+	frat["bro_1_right"].src = "#{url}bro_right.png"
+	#blk player
+	frat["bro_2_down"] = new Image()
+	frat["bro_2_down"].src = "#{url}bro_blk_down.png"
+	frat["bro_2_up"] = new Image()
+	frat["bro_2_up"].src = "#{url}bro_blk_up.png"
+	frat["bro_2_left"] = new Image()
+	frat["bro_2_left"].src = "#{url}bro_blk_left.png"
+	frat["bro_2_right"] = new Image()
+	frat["bro_2_right"].src = "#{url}bro_blk_right.png"
+	#blue player
+	frat["bro_3_down"] = new Image()
+	frat["bro_3_down"].src = "#{url}bro_blu_down.png"
+	frat["bro_3_up"] = new Image()
+	frat["bro_3_up"].src = "#{url}bro_blu_up.png"
+	frat["bro_3_left"] = new Image()
+	frat["bro_3_left"].src = "#{url}bro_blu_left.png"
+	frat["bro_3_right"] = new Image()
+	frat["bro_3_right"].src = "#{url}bro_blu_right.png"
+	#red player
+	frat["bro_4_down"] = new Image()
+	frat["bro_4_down"].src = "#{url}bro_red_down.png"
+	frat["bro_4_up"] = new Image()
+	frat["bro_4_up"].src = "#{url}bro_red_up.png"
+	frat["bro_4_left"] = new Image()
+	frat["bro_4_left"].src = "#{url}bro_red_left.png"
+	frat["bro_4_right"] = new Image()
+	frat["bro_4_right"].src = "#{url}bro_red_right.png"
+
 	socket = io.connect()
 
 	socket.on 'game_list', (data) ->
@@ -35,19 +83,50 @@
 
 	socket.on 'game_map', (data) ->
 		map = JSON.parse data.map
-		console.debug map
-
+		xpos = 0
+		ypos = 0
+		#draw map
+		for tile in map
+			if tile is "X"
+				ctx.fillStyle = "rgb(200,0,0)"
+				ctx.fillRect(xpos, ypos, 50, 50)
+			else
+				ctx.fillStyle = "rgb(0,200,0)"
+				ctx.fillRect(xpos, ypos, 50, 50)
+			if xpos is 600
+				xpos = 0
+				ypos = ypos + 50
+			else
+				xpos = xpos + 50
+		#draw bros
+		bros = JSON.parse data.bros
+		for bro in bros
+			ctx.drawImage(frat["bro_#{bro.playerNum}_#{bro.direction}"], bro.x*50, bro.y*50, 50, 50)
+		#draw drops
+		#draw bombs
 
 	client.create_game = () ->
 		name = $("#input_create").val()
 		$("#input_create").val("")
 		socket.emit 'create_game', {name: name}
-	
+
 	client.join_game = () ->
 		name = $("#games").val()
 		socket.emit 'join_game', {name: name}
-	
+
 	client.fetch_games = () ->
 		socket.emit 'fetch_games', {}
+
+	$(document).keyup (event) -> 
+		direction = switch event.which
+			when 37 then "left"
+			when 38 then "up"
+			when 39 then "right"
+			when 40 then "down"
+			else ""
+		if direction
+			event.preventDefault()
+			socket.emit 'move', {direction: direction}
+
 </script>
 </html>

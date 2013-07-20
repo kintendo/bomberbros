@@ -1,6 +1,23 @@
+7/19/2013
+decided to pass obj in addition to map
+thought: how to handle disconnects?
+
+7/18/2013
+$(document) not $("document"), to refer to doc obj
+i can move right one space. why can't i move more
+because i moved them on map but not in themselves
+anyway yay i can move around!
+next: test plant bomb
+thought: move to passing obj instead of map?
+
+7/17/2013
+blocks are drawn! yay for math!
+next: movement
+why isn't keypress working
+
 7/16/2013
 forgot @ to call class functions w/in class
-
+also! jquery # can't fetch canvas, needs the [0]
 
 7/14/2013
 note: of vs. in! of used for objs vs. in for arr

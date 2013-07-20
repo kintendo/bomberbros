@@ -25,6 +25,7 @@ games =  new Object
 io.sockets.on 'connection', (socket) ->
 
 	game = ""
+	broNum = 0
 
 	send_game_list = () ->
 		game_list = []
@@ -35,23 +36,23 @@ io.sockets.on 'connection', (socket) ->
 	send_game_list()
 
 	send_map = () ->
-		io.sockets.in(game.name).emit 'game_map', {map: JSON.stringify(game.map)}
+		io.sockets.in(game.name).emit 'game_map', {map: JSON.stringify(game.map), bros: JSON.stringify(game.bros)}
 
 	socket.on 'create_game', (data) ->
-		console.log "client request make #{data.name}"
+		console.log "client req make #{data.name}"
 		if not games[data.name]
 			game = games[data.name] = new Game(data.name)
-			game.addBro()
+			broNum = game.addBro()
 			socket.join(game.name)
 			send_map() 
 		else
 			socket.emit 'error', {message: "already exists"}
-	
+
 	socket.on 'join_game', (data) ->
 		console.log "client req join #{data.name}"
 		if games[data.name]
 			game = games[data.name]
-			game.addBro()
+			broNum = game.addBro()
 			socket.join(game.name)
 			send_map()
 		else
@@ -61,7 +62,9 @@ io.sockets.on 'connection', (socket) ->
 		send_game_list()
 
 	socket.on 'move', (data) ->
-		# move this char that direction
+		console.log "client req move #{data.direction}"
+		game.moveBro(broNum, data.direction)
+		send_map()
 
 	socket.on 'plant', () ->
 		# attempt to plant bomb at this char's pos
