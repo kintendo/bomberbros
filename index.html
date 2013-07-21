@@ -34,42 +34,47 @@
 	ctx = canvas.getContext("2d")
 
 	#load all images
-	frat = []
-	frat["bro_1_down"] = new Image()
-	frat["bro_1_down"].src = "#{url}bro_down.png"
-	frat["bro_1_up"] = new Image()
-	frat["bro_1_up"].src = "#{url}bro_up.png"
-	frat["bro_1_left"] = new Image()
-	frat["bro_1_left"].src = "#{url}bro_left.png"
-	frat["bro_1_right"] = new Image()
-	frat["bro_1_right"].src = "#{url}bro_right.png"
+	images = []
+	images["bomb"] = new Image()
+	images["bomb"].src = "#{url}bomb.png"
+	images["flame"] = new Image()
+	images["flame"].src = "#{url}flame.gif"
+	#white player
+	images["bro_1_down"] = new Image()
+	images["bro_1_down"].src = "#{url}bro_down.png"
+	images["bro_1_up"] = new Image()
+	images["bro_1_up"].src = "#{url}bro_up.png"
+	images["bro_1_left"] = new Image()
+	images["bro_1_left"].src = "#{url}bro_left.png"
+	images["bro_1_right"] = new Image()
+	images["bro_1_right"].src = "#{url}bro_right.png"
 	#blk player
-	frat["bro_2_down"] = new Image()
-	frat["bro_2_down"].src = "#{url}bro_blk_down.png"
-	frat["bro_2_up"] = new Image()
-	frat["bro_2_up"].src = "#{url}bro_blk_up.png"
-	frat["bro_2_left"] = new Image()
-	frat["bro_2_left"].src = "#{url}bro_blk_left.png"
-	frat["bro_2_right"] = new Image()
-	frat["bro_2_right"].src = "#{url}bro_blk_right.png"
+	images["bro_2_down"] = new Image()
+	images["bro_2_down"].src = "#{url}bro_blk_down.png"
+	images["bro_2_up"] = new Image()
+	images["bro_2_up"].src = "#{url}bro_blk_up.png"
+	images["bro_2_left"] = new Image()
+	images["bro_2_left"].src = "#{url}bro_blk_left.png"
+	images["bro_2_right"] = new Image()
+	images["bro_2_right"].src = "#{url}bro_blk_right.png"
 	#blue player
-	frat["bro_3_down"] = new Image()
-	frat["bro_3_down"].src = "#{url}bro_blu_down.png"
-	frat["bro_3_up"] = new Image()
-	frat["bro_3_up"].src = "#{url}bro_blu_up.png"
-	frat["bro_3_left"] = new Image()
-	frat["bro_3_left"].src = "#{url}bro_blu_left.png"
-	frat["bro_3_right"] = new Image()
-	frat["bro_3_right"].src = "#{url}bro_blu_right.png"
+	images["bro_3_down"] = new Image()
+	images["bro_3_down"].src = "#{url}bro_blu_down.png"
+	images["bro_3_up"] = new Image()
+	images["bro_3_up"].src = "#{url}bro_blu_up.png"
+	images["bro_3_left"] = new Image()
+	images["bro_3_left"].src = "#{url}bro_blu_left.png"
+	images["bro_3_right"] = new Image()
+	images["bro_3_right"].src = "#{url}bro_blu_right.png"
 	#red player
-	frat["bro_4_down"] = new Image()
-	frat["bro_4_down"].src = "#{url}bro_red_down.png"
-	frat["bro_4_up"] = new Image()
-	frat["bro_4_up"].src = "#{url}bro_red_up.png"
-	frat["bro_4_left"] = new Image()
-	frat["bro_4_left"].src = "#{url}bro_red_left.png"
-	frat["bro_4_right"] = new Image()
-	frat["bro_4_right"].src = "#{url}bro_red_right.png"
+	images["bro_4_down"] = new Image()
+	images["bro_4_down"].src = "#{url}bro_red_down.png"
+	images["bro_4_up"] = new Image()
+	images["bro_4_up"].src = "#{url}bro_red_up.png"
+	images["bro_4_left"] = new Image()
+	images["bro_4_left"].src = "#{url}bro_red_left.png"
+	images["bro_4_right"] = new Image()
+	images["bro_4_right"].src = "#{url}bro_red_right.png"
 
 	socket = io.connect()
 
@@ -90,6 +95,9 @@
 			if tile is "X"
 				ctx.fillStyle = "rgb(200,0,0)"
 				ctx.fillRect(xpos, ypos, 50, 50)
+			else if tile is "C"
+				ctx.fillStyle = "rgb(0,0,200)"
+				ctx.fillRect(xpos, ypos, 50, 50)
 			else
 				ctx.fillStyle = "rgb(0,200,0)"
 				ctx.fillRect(xpos, ypos, 50, 50)
@@ -101,9 +109,16 @@
 		#draw bros
 		bros = JSON.parse data.bros
 		for bro in bros
-			ctx.drawImage(frat["bro_#{bro.playerNum}_#{bro.direction}"], bro.x*50, bro.y*50, 50, 50)
+			ctx.drawImage(images["bro_#{bro.playerNum}_#{bro.direction}"], bro.x*50, bro.y*50, 50, 50)
 		#draw drops
 		#draw bombs
+		bombs = JSON.parse data.bombs
+		for bomb of bombs
+			ctx.drawImage(images["bomb"], bombs[bomb].x*50, bombs[bomb].y*50, 50, 50)
+		flame = JSON.parse data.flame
+		console.debug flame
+		for [x,y] in flame
+			ctx.drawImage(images["flame"], x*50, y*50, 50, 50)
 
 	client.create_game = () ->
 		name = $("#input_create").val()
@@ -127,6 +142,9 @@
 		if direction
 			event.preventDefault()
 			socket.emit 'move', {direction: direction}
+		else if event.which is 32
+			event.preventDefault()
+			socket.emit 'plant', {}
 
 </script>
 </html>

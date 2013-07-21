@@ -1,4 +1,5 @@
 Bro = require './bro.coffee'
+Bomb = require './bomb.coffee'
 
 class Game
 	constructor: (@name)->
@@ -15,7 +16,7 @@ class Game
 				 '0' , '0' , '0' , '0' , '0' , '0' , '0' , '0' , '0' , '0' , '0' , '0' , '0' ]
 		@bros = []
 		@drops = []
-		@bombs = []
+		@bombs = {}
 	
 	addBro: ()->
 		broNum = @bros.length + 1
@@ -31,8 +32,7 @@ class Game
 		else return 0
 
 	moveBro: (broNum, direction) ->
-		[x,y] = @bros[broNum-1].get_pos()
-		@setItemAt(x, y, "0")
+		[x,y] = @bros[broNum-1].gps()
 		switch direction
 			when "left" 
 				if @getItemAt(x-1,y) not in ["X","undefined", "B", "C"]
@@ -46,12 +46,54 @@ class Game
 			when "down"
 				if @getItemAt(x,y+1) not in ["X","undefined", "B", "C"]
 					if y < 10 then y = y + 1
-		@setItemAt(x, y, "P")
 		@bros[broNum-1].move(x,y,direction)
 
-	placeBomb: (broNum, x,y) ->
+	plantBomb: (broNum) ->
+		bro =  @bros[broNum-1]
+		[x,y] = bro.gps()
+		if bro.curBombs < bro.maxBombs
+			for num in [1..bro.maxBombs]
+				if @bombs["#{broNum}-#{num}"]? then continue
+				else
+					@bombs["#{broNum}-#{num}"] = new Bomb(broNum, x, y, bro.power)
+					bro.curBombs++
+					@setItemAt(x, y, "B")
+					return "#{broNum}-#{num}"
+		return null
+
+	explodeBomb: (bombName) ->
+		bomb = @bombs[bombName]
+		@bros[bomb.owner-1].curBombs-=1
+		@setItemAt(bomb.x, bomb.y, "O")
+		delete @bombs[bombName]
+		return @flameOn(bomb.x, bomb.y, bomb.power)
 
 	populateCrates: () ->
+
+	flameOn: (x, y, power) ->
+		coords = []
+		coords.push([x,y])
+		#left
+		for num in [1..power]
+			if @getItemAt(x-num,y) not in ["X","undefined", "B", "C"]
+				coords.push([x-num,y])
+			else break
+		#right
+		for num in [1..power]
+			if @getItemAt(x+num,y) not in ["X","undefined", "B", "C"]
+				coords.push([x+num,y])
+			else break
+		#up
+		for num in [1..power]
+			if @getItemAt(x,y-num) not in ["X","undefined", "B", "C"]
+				coords.push([x,y-num])
+			else break
+		#down
+		for num in [1..power]
+			if @getItemAt(x,y+num) not in ["X","undefined", "B", "C"]
+				coords.push([x,y+num])
+			else break
+		return coords
 
 	getItemAt: (x,y) ->
 		@map[y*13+x]

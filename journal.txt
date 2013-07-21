@@ -1,6 +1,14 @@
+7/20/2013
+map is for blocking tiles only, so no players
+no such thing as assoc arr, they're objects
+use delete to del assoc arr objects
+passing flame as coordinates per send map, wise choice?
+flames work! but go through walls....
+
 7/19/2013
 decided to pass obj in addition to map
 thought: how to handle disconnects?
+bombs are hard...
 
 7/18/2013
 $(document) not $("document"), to refer to doc obj

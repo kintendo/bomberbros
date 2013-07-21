@@ -1,7 +1,8 @@
 class Bro
 	constructor: (@playerNum, @x, @y) ->
-		@numBombs = 2 		# default # of bombs at one time
-		@power = 2 			# default range of bomb
+		@maxBombs = 2 		# default # of bombs at one time
+		@curBombs = 0
+		@power = 1 			# default range of bomb
 		@direction = "down"
 
 	move: (x,y, direction) ->
@@ -9,13 +10,7 @@ class Bro
 		@y = y
 		@direction = direction
 
-	get_pos: () ->
+	gps: () ->
 		[@x,@y]
-	
-	set_pos:(x,y) ->
-		@x = x
-		@y = y
-
-#white black blue red
 
 module.exports = Bro

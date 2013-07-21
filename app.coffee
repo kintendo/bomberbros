@@ -35,8 +35,13 @@ io.sockets.on 'connection', (socket) ->
 
 	send_game_list()
 
-	send_map = () ->
-		io.sockets.in(game.name).emit 'game_map', {map: JSON.stringify(game.map), bros: JSON.stringify(game.bros)}
+	send_map = (flame = []) ->
+		io.sockets.in(game.name).emit 'game_map', {map: JSON.stringify(game.map), bros: JSON.stringify(game.bros) , bombs: JSON.stringify(game.bombs), flame: JSON.stringify(flame)}
+
+	lag = () ->
+		setTimeout ( () ->
+			send_map()
+		), 500
 
 	socket.on 'create_game', (data) ->
 		console.log "client req make #{data.name}"
@@ -62,9 +67,16 @@ io.sockets.on 'connection', (socket) ->
 		send_game_list()
 
 	socket.on 'move', (data) ->
-		console.log "client req move #{data.direction}"
 		game.moveBro(broNum, data.direction)
 		send_map()
 
 	socket.on 'plant', () ->
 		# attempt to plant bomb at this char's pos
+		bomb = game.plantBomb(broNum)
+		if bomb?
+			send_map()
+			setTimeout ( () =>
+				flame = game.explodeBomb(bomb)
+				send_map(flame)
+				lag()
+			), 3000
