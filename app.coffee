@@ -6,6 +6,7 @@ express = require('express')
 app = express()
 server = http.createServer(app)	
 io = require('socket.io').listen(server)
+io.set('log level', 1);
 
 app.get '/', (req, res) ->
 	res.sendfile(__dirname + '/index.html')
@@ -44,7 +45,6 @@ io.sockets.on 'connection', (socket) ->
 		), 500
 
 	socket.on 'create_game', (data) ->
-		console.log "client req make #{data.name}"
 		if not games[data.name]
 			game = games[data.name] = new Game(data.name)
 			broNum = game.addBro()
@@ -54,7 +54,6 @@ io.sockets.on 'connection', (socket) ->
 			socket.emit 'error', {message: "already exists"}
 
 	socket.on 'join_game', (data) ->
-		console.log "client req join #{data.name}"
 		if games[data.name]
 			game = games[data.name]
 			broNum = game.addBro()
