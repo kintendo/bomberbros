@@ -36,10 +36,11 @@ io.sockets.on 'connection', (socket) ->
 	send_game_list()
 
 	send_map = (flame = []) ->
-		io.sockets.in(game.name).emit 'game_map', {map: JSON.stringify(game.map), bros: JSON.stringify(game.bros) , bombs: JSON.stringify(game.bombs), flame: JSON.stringify(flame)}
+		io.sockets.in(game.name).emit 'game_map', {game: JSON.stringify(game)}
 
-	lag = () ->
+	lag = (flame) ->
 		setTimeout ( () ->
+			game.flameOff(flame)
 			send_map()
 		), 500
 
@@ -49,7 +50,7 @@ io.sockets.on 'connection', (socket) ->
 			game = games[data.name] = new Game(data.name)
 			broNum = game.addBro()
 			socket.join(game.name)
-			send_map() 
+			send_map()
 		else
 			socket.emit 'error', {message: "already exists"}
 
@@ -66,17 +67,25 @@ io.sockets.on 'connection', (socket) ->
 	socket.on 'fetch_games', () ->
 		send_game_list()
 
+	socket.on 'start_game', () ->
+		game.status = "on"
+		io.sockets.in(game.name).emit 'start_game', {}
+
 	socket.on 'move', (data) ->
-		game.moveBro(broNum, data.direction)
-		send_map()
+		if game.status is "on"
+			if game.bros[broNum-1].life > 0
+				game.moveBro(broNum, data.direction)
+				send_map()
 
 	socket.on 'plant', () ->
-		# attempt to plant bomb at this char's pos
-		bomb = game.plantBomb(broNum)
-		if bomb?
-			send_map()
-			setTimeout ( () =>
-				flame = game.explodeBomb(bomb)
-				send_map(flame)
-				lag()
-			), 3000
+		if game.status is "on"
+			if game.bros[broNum-1].life > 0
+				bomb = game.plantBomb(broNum)
+				if bomb?
+					send_map()
+					setTimeout ( () =>
+						flame = game.explodeBomb(bomb)
+						send_map()
+						lag(flame)
+					), 3000
+

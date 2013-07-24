@@ -9,16 +9,36 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 </head>
 <body>
-
-	<select id="games"></select>
-	<button class="btn" onClick="join_game()">Join Game</button>
-	<button class="btn" onClick="fetch_games()">Refresh List</button>
-	<input id="input_create"></input>
-	<button class="btn" onCLick="create_game()">Create Game</button>
-
+<br>
+<div class="container">
+	<div class="well span4 offset4">
+		<legend><h2 class="form-signin-heading">Bomber Bros.</h2></legend>
+		<h4>Join Game</h4>
+		<select class="span3" id="games" size="4"></select>
+		<button class="btn btn-large btn-info" onClick="join_game()"><i class="icon-play icon-white"></i> Join Game</button>
+		<button class="btn btn-large btn-info" onClick="fetch_games()"><i class="icon-refresh icon-white"></i> Refresh List</button>
+		<br><br>
+		<h4>Create Game</h4>
+		<input id="input_create" placeholder="Game Name"></input>
+		<br><br>
+		<button class="btn btn-large btn-info" onCLick="create_game()"><i class="icon-plus icon-white"></i> Create Game</button>
+		<br>
+	</div>
 	<br></br>
+</div>
 
-	<canvas id="canvas"></canvas>
+<div class="modal hide fade" style="width: 700px; margin: -50px 0 0 -350px;">
+	<div class="modal-header">
+		<span id="stats"></span>
+	</div>
+	<div class="modal-body" style="max-height:600px; ">
+		<canvas id="canvas"></canvas>
+	</div>
+	<div class="modal-footer">
+		<span class="pull-left"><code>arrows</code> to move. <code>space</code> to plant bomb. <code>esc</code> to quit.</span>
+		<button class="btn btn-inverse" onClick="start_game()"><i class="icon-plus icon-white"></i> Start Game</button>
+	</div>
+</div>
 
 </body>
 
@@ -39,6 +59,16 @@
 	images["bomb"].src = "#{url}bomb.png"
 	images["flame"] = new Image()
 	images["flame"].src = "#{url}flame.gif"
+	images["grass"] = new Image()
+	images["grass"].src = "#{url}grass.png"
+	images["crate"] = new Image()
+	images["crate"].src = "#{url}crate.png"
+	images["cube"] = new Image()
+	images["cube"].src = "#{url}cube.png"
+	images["drop_bomb"] = new Image()
+	images["drop_bomb"].src = "#{url}drop_bomb.png"
+	images["drop_flame"] = new Image()
+	images["drop_flame"].src = "#{url}drop_flame.png"
 	#white player
 	images["bro_1_down"] = new Image()
 	images["bro_1_down"].src = "#{url}bro_down.png"
@@ -82,55 +112,102 @@
 		console.debug data
 		list = JSON.parse(data.list)
 		$("#games").html("")
-		for item in list
-			$("#games").append("<option>#{item}</option>")
-		$("#games").prop("size", list.length)
+		if list.length is 0
+			$("#games").append("<option disabled='disabled'>No games. Create one!</option>")
+		else
+			for item in list
+				$("#games").append("<option>#{item}</option>")
+		#$("#games").prop("size", list.length)
+
+	socket.on 'start_game', () ->
+		$('.modal-footer .btn').hide()
 
 	socket.on 'game_map', (data) ->
-		map = JSON.parse data.map
-		xpos = 0
-		ypos = 0
-		#draw map
+		game = JSON.parse data.game
+		map = game.map
+		xpos = 0; ypos = 0
 		for tile in map
 			if tile is "X"
-				ctx.fillStyle = "rgb(200,0,0)"
-				ctx.fillRect(xpos, ypos, 50, 50)
+				ctx.drawImage(images["cube"], xpos, ypos, 50, 50)
 			else if tile is "C"
-				ctx.fillStyle = "rgb(0,0,200)"
-				ctx.fillRect(xpos, ypos, 50, 50)
+				ctx.drawImage(images["crate"], xpos, ypos, 50, 50)
 			else
-				ctx.fillStyle = "rgb(0,200,0)"
-				ctx.fillRect(xpos, ypos, 50, 50)
+				ctx.drawImage(images["grass"], xpos, ypos, 50, 50)
 			if xpos is 600
-				xpos = 0
-				ypos = ypos + 50
+				xpos = 0; ypos+=50
 			else
-				xpos = xpos + 50
+				xpos+=50
 		#draw bros
-		bros = JSON.parse data.bros
+		bros = game.bros
+		$("#stats").html('')
 		for bro in bros
+			switch bro.playerNum
+				when 1
+					$("#stats").append("<span class='label'>P1: </span>")
+					if bro.life <= 0
+						$("#stats").append(" <i class='icon-remove'></i> ")
+						continue
+					else
+						for heart in [1..bro.life]
+							$("#stats").append(" <i class='icon-heart'></i> ")
+				when 2
+					$("#stats").append("<span class='label label-inverse'>P2: </span>")
+					if bro.life <= 0
+						$("#stats").append(" <i class='icon-remove'></i> ")
+						continue
+					else
+						for heart in [1..bro.life]
+							$("#stats").append(" <i class='icon-heart'></i> ")
+				when 3
+					$("#stats").append("<span class='label label-info'>P3: </span>")
+					if bro.life <= 0
+						$("#stats").append(" <i class='icon-remove'></i> ")
+						continue
+					else
+						for heart in [1..bro.life]
+							$("#stats").append(" <i class='icon-heart'></i> ")
+				when 4
+					$("#stats").append("<span class='label label-important'>P4: </span>")
+					if bro.life <= 0
+						$("#stats").append(" <i class='icon-remove'></i> ")
+						continue
+					else
+						for heart in [1..bro.life]
+							$("#stats").append(" <i class='icon-heart'></i> ")
 			ctx.drawImage(images["bro_#{bro.playerNum}_#{bro.direction}"], bro.x*50, bro.y*50, 50, 50)
 		#draw drops
+		drops = game.drops
+		for drop in drops
+			if drop.type is "flame"
+				ctx.drawImage(images["drop_flame"], drop.x*50, drop.y*50, 50, 50)
+			else if drop.type is "bomb"
+				ctx.drawImage(images["drop_bomb"], drop.x*50, drop.y*50, 50, 50)
 		#draw bombs
-		bombs = JSON.parse data.bombs
+		bombs = game.bombs
 		for bomb of bombs
 			ctx.drawImage(images["bomb"], bombs[bomb].x*50, bombs[bomb].y*50, 50, 50)
-		flame = JSON.parse data.flame
-		console.debug flame
-		for [x,y] in flame
-			ctx.drawImage(images["flame"], x*50, y*50, 50, 50)
+		#draw flame
+		flames = game.flames
+		for key of flames
+			for [x,y] in flames[key]
+				ctx.drawImage(images["flame"], x*50, y*50, 50, 50)
 
 	client.create_game = () ->
 		name = $("#input_create").val()
 		$("#input_create").val("")
 		socket.emit 'create_game', {name: name}
+		$(".modal").modal({backdrop:"static"})
 
 	client.join_game = () ->
 		name = $("#games").val()
 		socket.emit 'join_game', {name: name}
+		$(".modal").modal({backdrop:"static"})
 
 	client.fetch_games = () ->
 		socket.emit 'fetch_games', {}
+
+	client.start_game = () ->
+		socket.emit 'start_game', {}
 
 	$(document).keyup (event) -> 
 		direction = switch event.which

@@ -1,3 +1,23 @@
+7/23/2013
+menu/presentation seems good
+modaled the game play (i hate css)
+added life to bros
+next: handle room leaves and deaths
+
+7/22/2013
+fix flame animation
+fix 2 bombs 1 spot
+TODO: handle leaving game (maybe sessions?)
+TODO: handle score
+TODO: handle menu/presentation
+
+7/21/2013
+flames block on walls now
+game runs relatively slow...
+crates are working, now need drops
+bug: two bombs one spot
+bug: flames disappear too quickly
+
 7/20/2013
 map is for blocking tiles only, so no players
 no such thing as assoc arr, they're objects
