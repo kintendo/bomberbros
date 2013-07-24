@@ -22,18 +22,20 @@ class Game
 		@populateCrates()
 		@status = "off"
 
+	leave: (broNum) ->
+		@bros[broNum-1] = null
+
 	addBro: ()->
-		for num in [1..4]
-			if @bros[num-1]? then continue
-			else
-				[x,y] = switch num
-					when 1 then [0,0]
-					when 2 then [12,10]
-					when 3 then [12,0]
-					when 4 then [0,10]
-				bro = new Bro(num, x, y)
-				@bros[num-1] = bro
-				return num
+		num = @bros.length + 1
+		if num <= 4
+			[x,y] = switch num
+				when 1 then [0,0]
+				when 2 then [12,10]
+				when 3 then [12,0]
+				when 4 then [0,10]
+			bro = new Bro(num, x, y)
+			@bros[num-1] = bro
+			return num
 		return 0
 
 	moveBro: (broNum, direction) ->
@@ -72,7 +74,8 @@ class Game
 		@bros[broNum-1].maxBombs = 2
 		@bros[broNum-1].power = 1
 		@bros[broNum-1].life -= 1
-		@bros[broNum-1].life <= 0
+		if @bros[broNum-1].life <= 0
+			@bros[broNum-1] = null
 
 	plantBomb: (broNum) ->
 		bro =  @bros[broNum-1]
@@ -155,9 +158,10 @@ class Game
 			else break
 		for [ex,why] in coords
 			for bro in @bros
-				[x,y] = bro.gps()
-				if ex is x and why is y
-					@killBro(bro.playerNum)
+				if bro?
+					[x,y] = bro.gps()
+					if ex is x and why is y
+						@killBro(bro.playerNum)
 		@flames["#{x}-#{y}"] = coords
 		return "#{x}-#{y}"
 

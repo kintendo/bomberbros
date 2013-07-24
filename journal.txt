@@ -1,3 +1,14 @@
+7/24/2013
+guy dies. null it
+guy hits esc to quit, null it
+if game has all null bros, delete it
+something is causing double damage...
+trying to switch to express framework
+serving images from server vs. dropbox
+app.get for specific routing
+app.use for directories
+how to filter to only pngs and gifs?
+
 7/23/2013
 menu/presentation seems good
 modaled the game play (i hate css)

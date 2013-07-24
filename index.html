@@ -15,7 +15,7 @@
 		<legend><h2 class="form-signin-heading">Bomber Bros.</h2></legend>
 		<h4>Join Game</h4>
 		<select class="span3" id="games" size="4"></select>
-		<button class="btn btn-large btn-info" onClick="join_game()"><i class="icon-play icon-white"></i> Join Game</button>
+		<button class="btn btn-large btn-info" onClick="join_game()"><i class="icon-share icon-white"></i> Join Game</button>
 		<button class="btn btn-large btn-info" onClick="fetch_games()"><i class="icon-refresh icon-white"></i> Refresh List</button>
 		<br><br>
 		<h4>Create Game</h4>
@@ -36,7 +36,7 @@
 	</div>
 	<div class="modal-footer">
 		<span class="pull-left"><code>arrows</code> to move. <code>space</code> to plant bomb. <code>esc</code> to quit.</span>
-		<button class="btn btn-inverse" onClick="start_game()"><i class="icon-plus icon-white"></i> Start Game</button>
+		<button class="btn btn-inverse" onClick="start_game()"><i class="icon-play icon-white"></i> Start Game</button>
 	</div>
 </div>
 
@@ -46,7 +46,8 @@
 
 	client = exports ? this
 
-	url = "http://dl.dropboxusercontent.com/u/261248/bmbro/"
+	#url = "http://dl.dropboxusercontent.com/u/261248/bmbro/"
+	url = "/images/"
 
 	canvas = $("#canvas")[0]
 	canvas.width = 13*50 #x-coord
@@ -140,11 +141,11 @@
 		#draw bros
 		bros = game.bros
 		$("#stats").html('')
-		for bro in bros
-			switch bro.playerNum
+		for bro, i in bros
+			switch i+1
 				when 1
 					$("#stats").append("<span class='label'>P1: </span>")
-					if bro.life <= 0
+					if bro is null || bro.life <= 0
 						$("#stats").append(" <i class='icon-remove'></i> ")
 						continue
 					else
@@ -152,7 +153,7 @@
 							$("#stats").append(" <i class='icon-heart'></i> ")
 				when 2
 					$("#stats").append("<span class='label label-inverse'>P2: </span>")
-					if bro.life <= 0
+					if bro is null || bro.life <= 0
 						$("#stats").append(" <i class='icon-remove'></i> ")
 						continue
 					else
@@ -160,7 +161,7 @@
 							$("#stats").append(" <i class='icon-heart'></i> ")
 				when 3
 					$("#stats").append("<span class='label label-info'>P3: </span>")
-					if bro.life <= 0
+					if bro is null || bro.life <= 0
 						$("#stats").append(" <i class='icon-remove'></i> ")
 						continue
 					else
@@ -168,7 +169,7 @@
 							$("#stats").append(" <i class='icon-heart'></i> ")
 				when 4
 					$("#stats").append("<span class='label label-important'>P4: </span>")
-					if bro.life <= 0
+					if bro is null || bro.life <= 0
 						$("#stats").append(" <i class='icon-remove'></i> ")
 						continue
 					else
@@ -222,6 +223,12 @@
 		else if event.which is 32
 			event.preventDefault()
 			socket.emit 'plant', {}
+		else if event.which is 27
+			event.preventDefault()
+			socket.emit 'fetch_games', {}
+			$(".modal").modal("hide")
+			socket.emit 'quit', {}
+			
 
 </script>
 </html>

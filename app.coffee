@@ -2,18 +2,17 @@
 # ==============================================================================
 http = require 'http'
 fs = require 'fs'
+express = require('express')
+app = express()
+server = http.createServer(app)	
+io = require('socket.io').listen(server)
 
-app = http.createServer (req,res)->
-	fs.readFile "#{__dirname}/index.html", (err, data) ->
-		if err
-			res.writeHead(500)
-			res.end('Error loading index.html')
-		else
-			res.writeHead(200)
-			res.end(data)
+app.get '/', (req, res) ->
+	res.sendfile(__dirname + '/index.html')
 
-io = require('socket.io').listen app
-app.listen process.env.PORT
+app.use('/images', express.static(__dirname + '/images'))
+
+server.listen process.env.PORT
 
 # logic accessible by all sockets
 # ==============================================================================
@@ -59,8 +58,13 @@ io.sockets.on 'connection', (socket) ->
 		if games[data.name]
 			game = games[data.name]
 			broNum = game.addBro()
-			socket.join(game.name)
-			send_map()
+			if broNum
+				socket.join(game.name)
+				if game.status is "on"
+					socket.emit 'start_game', {}
+				send_map()
+			else
+				socket.emit 'error', {message: "game full"}
 		else
 			socket.emit 'error', {message: "doesn't exist"}
 
@@ -73,13 +77,13 @@ io.sockets.on 'connection', (socket) ->
 
 	socket.on 'move', (data) ->
 		if game.status is "on"
-			if game.bros[broNum-1].life > 0
+			if game.bros[broNum-1]?
 				game.moveBro(broNum, data.direction)
 				send_map()
 
 	socket.on 'plant', () ->
 		if game.status is "on"
-			if game.bros[broNum-1].life > 0
+			if game.bros[broNum-1]?
 				bomb = game.plantBomb(broNum)
 				if bomb?
 					send_map()
@@ -88,4 +92,18 @@ io.sockets.on 'connection', (socket) ->
 						send_map()
 						lag(flame)
 					), 3000
+
+	socket.on 'quit', () ->
+		if game
+			game.leave(broNum)
+			for bro in game.bros
+				if bro? then return send_map()
+			delete games[game.name]
+
+	socket.on 'disconnect', () ->
+		if game
+			game.leave(broNum)
+			for bro in game.bros
+				if bro? then return send_map()
+			delete games[game.name]
 
