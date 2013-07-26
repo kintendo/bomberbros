@@ -8,6 +8,7 @@ Stack
 * node.js
 * express framework
 * socket.io
+* coffeescript
 * canvas
 
 
