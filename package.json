@@ -1,14 +1,17 @@
 {
-    "name": "bomberbros",                                              
+    "name": "bomberbros",
     "version": "0.0.1",
+    "scripts":
+    {
+        "start": "node server.js"
+    },
     "dependencies":
     {
-        "socket.io": "0.9.x",
-        "express": "3.0.x"
+        "socket.io": "^4.8.1",
+        "express": "^4.21.2"
     },
-    "engines": 
+    "engines":
     {
-        "node": "0.10.x",
-        "npm": "1.2.x"
+        "node": ">=18"
     }
 }

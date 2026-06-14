@@ -4,7 +4,6 @@
 <script src="/socket.io/socket.io.js"></script>
 <script src="https://ajax.googleapis.com/ajax/libs/jquery/1.10.2/jquery.min.js"></script>
 <script src="//netdna.bootstrapcdn.com/twitter-bootstrap/2.3.2/js/bootstrap.min.js"></script>
-
 <link href="//netdna.bootstrapcdn.com/twitter-bootstrap/2.3.2/css/bootstrap-combined.min.css" rel="stylesheet">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 </head>
@@ -42,254 +41,169 @@
 
 </body>
 
-<script type="text/coffeescript">
 <script type="text/javascript">
-/*
- * decaffeinate suggestions:
- * DS101: Remove unnecessary use of Array.from
- * DS102: Remove unnecessary code created because of implicit returns
- * DS202: Simplify dynamic range loops
- * DS205: Consider reworking code to avoid use of IIFEs
- * DS207: Consider shorter variations of null checks
- * DS208: Avoid top-level this
- * Full docs: https://github.com/decaffeinate/decaffeinate/blob/main/docs/suggestions.md
- */
 
-	const client = typeof exports !== 'undefined' && exports !== null ? exports : this;
-
-	//url = "http://dl.dropboxusercontent.com/u/261248/bmbro/"
 	const url = "/images/";
 
 	const canvas = $("#canvas")[0];
-	canvas.width = 13*50; //x-coord
-	canvas.height = 11*50; //y-coord
+	canvas.width = 13 * 50;  // x-coord
+	canvas.height = 11 * 50; // y-coord
 	const ctx = canvas.getContext("2d");
 
-	//load all images
-	const images = [];
-	images["bomb"] = new Image();
-	images["bomb"].src = `${url}bomb.png`;
-	images["flame"] = new Image();
-	images["flame"].src = `${url}flame.gif`;
-	images["grass"] = new Image();
-	images["grass"].src = `${url}grass.png`;
-	images["crate"] = new Image();
-	images["crate"].src = `${url}crate.png`;
-	images["cube"] = new Image();
-	images["cube"].src = `${url}cube.png`;
-	images["drop_bomb"] = new Image();
-	images["drop_bomb"].src = `${url}drop_bomb.png`;
-	images["drop_flame"] = new Image();
-	images["drop_flame"].src = `${url}drop_flame.png`;
-	//white player
-	images["bro_1_down"] = new Image();
-	images["bro_1_down"].src = `${url}bro_down.png`;
-	images["bro_1_up"] = new Image();
-	images["bro_1_up"].src = `${url}bro_up.png`;
-	images["bro_1_left"] = new Image();
-	images["bro_1_left"].src = `${url}bro_left.png`;
-	images["bro_1_right"] = new Image();
-	images["bro_1_right"].src = `${url}bro_right.png`;
-	//blk player
-	images["bro_2_down"] = new Image();
-	images["bro_2_down"].src = `${url}bro_blk_down.png`;
-	images["bro_2_up"] = new Image();
-	images["bro_2_up"].src = `${url}bro_blk_up.png`;
-	images["bro_2_left"] = new Image();
-	images["bro_2_left"].src = `${url}bro_blk_left.png`;
-	images["bro_2_right"] = new Image();
-	images["bro_2_right"].src = `${url}bro_blk_right.png`;
-	//blue player
-	images["bro_3_down"] = new Image();
-	images["bro_3_down"].src = `${url}bro_blu_down.png`;
-	images["bro_3_up"] = new Image();
-	images["bro_3_up"].src = `${url}bro_blu_up.png`;
-	images["bro_3_left"] = new Image();
-	images["bro_3_left"].src = `${url}bro_blu_left.png`;
-	images["bro_3_right"] = new Image();
-	images["bro_3_right"].src = `${url}bro_blu_right.png`;
-	//red player
-	images["bro_4_down"] = new Image();
-	images["bro_4_down"].src = `${url}bro_red_down.png`;
-	images["bro_4_up"] = new Image();
-	images["bro_4_up"].src = `${url}bro_red_up.png`;
-	images["bro_4_left"] = new Image();
-	images["bro_4_left"].src = `${url}bro_red_left.png`;
-	images["bro_4_right"] = new Image();
-	images["bro_4_right"].src = `${url}bro_red_right.png`;
+	// load all images
+	const images = {};
+	function loadImage(name, file) {
+		images[name] = new Image();
+		images[name].src = url + file;
+	}
 
-	const socket = io.connect();
+	loadImage("bomb", "bomb.png");
+	loadImage("flame", "flame.gif");
+	loadImage("grass", "grass.png");
+	loadImage("crate", "crate.png");
+	loadImage("cube", "cube.png");
+	loadImage("drop_bomb", "drop_bomb.png");
+	loadImage("drop_flame", "drop_flame.png");
+	// white player
+	loadImage("bro_1_down", "bro_down.png");
+	loadImage("bro_1_up", "bro_up.png");
+	loadImage("bro_1_left", "bro_left.png");
+	loadImage("bro_1_right", "bro_right.png");
+	// black player
+	loadImage("bro_2_down", "bro_blk_down.png");
+	loadImage("bro_2_up", "bro_blk_up.png");
+	loadImage("bro_2_left", "bro_blk_left.png");
+	loadImage("bro_2_right", "bro_blk_right.png");
+	// blue player
+	loadImage("bro_3_down", "bro_blu_down.png");
+	loadImage("bro_3_up", "bro_blu_up.png");
+	loadImage("bro_3_left", "bro_blu_left.png");
+	loadImage("bro_3_right", "bro_blu_right.png");
+	// red player
+	loadImage("bro_4_down", "bro_red_down.png");
+	loadImage("bro_4_up", "bro_red_up.png");
+	loadImage("bro_4_left", "bro_red_left.png");
+	loadImage("bro_4_right", "bro_red_right.png");
+
+	// bootstrap label markup for each player's stat line
+	const PLAYER_LABELS = [
+		"<span class='label'>P1: </span>",
+		"<span class='label label-inverse'>P2: </span>",
+		"<span class='label label-info'>P3: </span>",
+		"<span class='label label-important'>P4: </span>",
+	];
+
+	const socket = io();
 
 	socket.on('game_list', function(data) {
 		console.debug(data);
 		const list = JSON.parse(data.list);
 		$("#games").html("");
 		if (list.length === 0) {
-			return $("#games").append("<option disabled='disabled'>No games. Create one!</option>");
+			$("#games").append("<option disabled='disabled'>No games. Create one!</option>");
 		} else {
-			return Array.from(list).map((item) =>
-				$("#games").append(`<option>${item}</option>`));
+			for (const item of list) {
+				$("#games").append(`<option>${item}</option>`);
+			}
 		}
 	});
-		//$("#games").prop("size", list.length)
 
 	socket.on('start_game', () => $('.modal-footer .btn').hide());
 
 	socket.on('game_map', function(data) {
 		const game = JSON.parse(data.game);
-		const {
-            map
-        } = game;
-		let xpos = 0; let ypos = 0;
-		for (var tile of Array.from(map)) {
+
+		// draw the map tiles
+		let xpos = 0, ypos = 0;
+		for (const tile of game.map) {
 			if (tile === "X") {
-				ctx.drawImage(images["cube"], xpos, ypos, 50, 50);
+				ctx.drawImage(images.cube, xpos, ypos, 50, 50);
 			} else if (tile === "C") {
-				ctx.drawImage(images["crate"], xpos, ypos, 50, 50);
+				ctx.drawImage(images.crate, xpos, ypos, 50, 50);
 			} else {
-				ctx.drawImage(images["grass"], xpos, ypos, 50, 50);
+				ctx.drawImage(images.grass, xpos, ypos, 50, 50);
 			}
 			if (xpos === 600) {
-				xpos = 0; ypos+=50;
+				xpos = 0; ypos += 50;
 			} else {
-				xpos+=50;
+				xpos += 50;
 			}
 		}
-		//draw bros
-		const {
-            bros
-        } = game;
+
+		// draw bros and their life stats
 		$("#stats").html('');
-		for (let i = 0; i < bros.length; i++) {
-			var heart;
-			var bro = bros[i];
-			switch (i+1) {
-				case 1:
-					$("#stats").append("<span class='label'>P1: </span>");
-					if ((bro === null) || (bro.life <= 0)) {
-						$("#stats").append(" <i class='icon-remove'></i> ");
-						continue;
-					} else {
-						var asc, end;
-						for (heart = 1, end = bro.life, asc = 1 <= end; asc ? heart <= end : heart >= end; asc ? heart++ : heart--) {
-							$("#stats").append(" <i class='icon-heart'></i> ");
-						}
-					}
-					break;
-				case 2:
-					$("#stats").append("<span class='label label-inverse'>P2: </span>");
-					if ((bro === null) || (bro.life <= 0)) {
-						$("#stats").append(" <i class='icon-remove'></i> ");
-						continue;
-					} else {
-						var asc1, end1;
-						for (heart = 1, end1 = bro.life, asc1 = 1 <= end1; asc1 ? heart <= end1 : heart >= end1; asc1 ? heart++ : heart--) {
-							$("#stats").append(" <i class='icon-heart'></i> ");
-						}
-					}
-					break;
-				case 3:
-					$("#stats").append("<span class='label label-info'>P3: </span>");
-					if ((bro === null) || (bro.life <= 0)) {
-						$("#stats").append(" <i class='icon-remove'></i> ");
-						continue;
-					} else {
-						var asc2, end2;
-						for (heart = 1, end2 = bro.life, asc2 = 1 <= end2; asc2 ? heart <= end2 : heart >= end2; asc2 ? heart++ : heart--) {
-							$("#stats").append(" <i class='icon-heart'></i> ");
-						}
-					}
-					break;
-				case 4:
-					$("#stats").append("<span class='label label-important'>P4: </span>");
-					if ((bro === null) || (bro.life <= 0)) {
-						$("#stats").append(" <i class='icon-remove'></i> ");
-						continue;
-					} else {
-						var asc3, end3;
-						for (heart = 1, end3 = bro.life, asc3 = 1 <= end3; asc3 ? heart <= end3 : heart >= end3; asc3 ? heart++ : heart--) {
-							$("#stats").append(" <i class='icon-heart'></i> ");
-						}
-					}
-					break;
+		for (let i = 0; i < game.bros.length; i++) {
+			const bro = game.bros[i];
+			$("#stats").append(PLAYER_LABELS[i]);
+			if (bro === null || bro.life <= 0) {
+				$("#stats").append(" <i class='icon-remove'></i> ");
+				continue;
 			}
-			ctx.drawImage(images[`bro_${bro.playerNum}_${bro.direction}`], bro.x*50, bro.y*50, 50, 50);
+			for (let heart = 1; heart <= bro.life; heart++) {
+				$("#stats").append(" <i class='icon-heart'></i> ");
+			}
+			ctx.drawImage(images[`bro_${bro.playerNum}_${bro.direction}`], bro.x * 50, bro.y * 50, 50, 50);
 		}
-		//draw drops
-		const {
-            drops
-        } = game;
-		for (var drop of Array.from(drops)) {
+
+		// draw drops
+		for (const drop of game.drops) {
 			if (drop.type === "flame") {
-				ctx.drawImage(images["drop_flame"], drop.x*50, drop.y*50, 50, 50);
+				ctx.drawImage(images.drop_flame, drop.x * 50, drop.y * 50, 50, 50);
 			} else if (drop.type === "bomb") {
-				ctx.drawImage(images["drop_bomb"], drop.x*50, drop.y*50, 50, 50);
+				ctx.drawImage(images.drop_bomb, drop.x * 50, drop.y * 50, 50, 50);
 			}
 		}
-		//draw bombs
-		const {
-            bombs
-        } = game;
-		for (var bomb in bombs) {
-			ctx.drawImage(images["bomb"], bombs[bomb].x*50, bombs[bomb].y*50, 50, 50);
+
+		// draw bombs
+		for (const key in game.bombs) {
+			const bomb = game.bombs[key];
+			ctx.drawImage(images.bomb, bomb.x * 50, bomb.y * 50, 50, 50);
 		}
-		//draw flame
-		const {
-            flames
-        } = game;
-		return (() => {
-			const result = [];
-			for (var key in flames) {
-				result.push((() => {
-					const result1 = [];
-					for (var [x,y] of Array.from(flames[key])) {
-						result1.push(ctx.drawImage(images["flame"], x*50, y*50, 50, 50));
-					}
-					return result1;
-				})());
+
+		// draw flames
+		for (const key in game.flames) {
+			for (const [x, y] of game.flames[key]) {
+				ctx.drawImage(images.flame, x * 50, y * 50, 50, 50);
 			}
-			return result;
-		})();
+		}
 	});
 
-	client.create_game = function() {
+	function create_game() {
 		const name = $("#input_create").val();
 		$("#input_create").val("");
-		socket.emit('create_game', {name});
-		return $(".modal").modal({backdrop:"static"});
-	};
+		socket.emit('create_game', { name });
+		$(".modal").modal({ backdrop: "static" });
+	}
 
-	client.join_game = function() {
+	function join_game() {
 		const name = $("#games").val();
-		socket.emit('join_game', {name});
-		return $(".modal").modal({backdrop:"static"});
-	};
+		socket.emit('join_game', { name });
+		$(".modal").modal({ backdrop: "static" });
+	}
 
-	client.fetch_games = () => socket.emit('fetch_games', {});
+	function fetch_games() {
+		socket.emit('fetch_games', {});
+	}
 
-	client.start_game = () => socket.emit('start_game', {});
+	function start_game() {
+		socket.emit('start_game', {});
+	}
 
 	$(document).keyup(function(event) {
-		const direction = (() => { switch (event.which) {
-			case 37: return "left";
-			case 38: return "up";
-			case 39: return "right";
-			case 40: return "down";
-			default: return "";
-		} })();
+		const direction = { 37: "left", 38: "up", 39: "right", 40: "down" }[event.which] || "";
 		if (direction) {
 			event.preventDefault();
-			return socket.emit('move', {direction});
+			socket.emit('move', { direction });
 		} else if (event.which === 32) {
 			event.preventDefault();
-			return socket.emit('plant', {});
+			socket.emit('plant', {});
 		} else if (event.which === 27) {
 			event.preventDefault();
 			socket.emit('fetch_games', {});
 			$(".modal").modal("hide");
-			return socket.emit('quit', {});
-		}});
-			
+			socket.emit('quit', {});
+		}
+	});
 
 </script>
 </html>
