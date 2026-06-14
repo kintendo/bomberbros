@@ -1,137 +1,110 @@
-/*
- * decaffeinate suggestions:
- * DS101: Remove unnecessary use of Array.from
- * DS102: Remove unnecessary code created because of implicit returns
- * DS207: Consider shorter variations of null checks
- * Full docs: https://github.com/decaffeinate/decaffeinate/blob/main/docs/suggestions.md
- */
 // sends index.html to each connection
 // ==============================================================================
 const http = require('http');
-const fs = require('fs');
 const express = require('express');
+const { Server } = require('socket.io');
+
 const app = express();
 const server = http.createServer(app);
-const io = require('socket.io').listen(server);
-io.set('log level', 1);
+const io = new Server(server);
 
-app.get('/', (req, res) => res.sendfile(__dirname + '/index.html'));
-
+app.get('/', (req, res) => res.sendFile(__dirname + '/index.html'));
 app.use('/images', express.static(__dirname + '/images'));
 
-server.listen(process.env.PORT);
+server.listen(process.env.PORT || 5000);
 
 // logic accessible by all sockets
 // ==============================================================================
-
-const Bro = require('./bro');
 const Game = require('./game');
-const games =  new Object;
+const games = {};
 
-io.sockets.on('connection', function(socket) {
+io.on('connection', (socket) => {
+  let game = "";
+  let broNum = 0;
 
-	let game = "";
-	let broNum = 0;
+  const sendGameList = () => {
+    socket.emit('game_list', { list: JSON.stringify(Object.keys(games)) });
+  };
 
-	const send_game_list = function() {
-		const game_list = [];
-		for (var key in games) {
-			game_list.push(key);
-		}
-		return socket.emit('game_list', {list: JSON.stringify(game_list)});
-	};
+  const sendMap = () => {
+    io.in(game.name).emit('game_map', { game: JSON.stringify(game) });
+  };
 
-	send_game_list();
+  // clear a bomb's flames shortly after it goes off, then redraw
+  const lag = (flame) => {
+    setTimeout(() => {
+      game.flameOff(flame);
+      sendMap();
+    }, 500);
+  };
 
-	const send_map = function(flame) {
-		if (flame == null) { flame = []; }
-		return io.sockets.in(game.name).emit('game_map', {game: JSON.stringify(game)});
-	};
+  sendGameList();
 
-	const lag = flame => setTimeout(( function() {
-        game.flameOff(flame);
-        return send_map();
-    }), 500);
+  socket.on('create_game', (data) => {
+    if (games[data.name]) {
+      socket.emit('error', { message: "already exists" });
+      return;
+    }
+    game = games[data.name] = new Game(data.name);
+    broNum = game.addBro();
+    socket.join(game.name);
+    sendMap();
+  });
 
-	socket.on('create_game', function(data) {
-		if (!games[data.name]) {
-			game = (games[data.name] = new Game(data.name));
-			broNum = game.addBro();
-			socket.join(game.name);
-			return send_map();
-		} else {
-			return socket.emit('error', {message: "already exists"});
-		}
-});
+  socket.on('join_game', (data) => {
+    if (!games[data.name]) {
+      socket.emit('error', { message: "doesn't exist" });
+      return;
+    }
+    game = games[data.name];
+    broNum = game.addBro();
+    if (!broNum) {
+      socket.emit('error', { message: "game full" });
+      return;
+    }
+    socket.join(game.name);
+    if (game.status === "on") {
+      socket.emit('start_game', {});
+    }
+    sendMap();
+  });
 
-	socket.on('join_game', function(data) {
-		if (games[data.name]) {
-			game = games[data.name];
-			broNum = game.addBro();
-			if (broNum) {
-				socket.join(game.name);
-				if (game.status === "on") {
-					socket.emit('start_game', {});
-				}
-				return send_map();
-			} else {
-				return socket.emit('error', {message: "game full"});
-			}
-		} else {
-			return socket.emit('error', {message: "doesn't exist"});
-		}
-});
+  socket.on('fetch_games', () => sendGameList());
 
-	socket.on('fetch_games', () => send_game_list());
+  socket.on('start_game', () => {
+    game.status = "on";
+    io.in(game.name).emit('start_game', {});
+  });
 
-	socket.on('start_game', function() {
-		game.status = "on";
-		return io.sockets.in(game.name).emit('start_game', {});
-});
+  socket.on('move', (data) => {
+    if (game.status === "on" && game.bros[broNum - 1] != null) {
+      game.moveBro(broNum, data.direction);
+      sendMap();
+    }
+  });
 
-	socket.on('move', function(data) {
-		if (game.status === "on") {
-			if (game.bros[broNum-1] != null) {
-				game.moveBro(broNum, data.direction);
-				return send_map();
-			}
-		}
-	});
+  socket.on('plant', () => {
+    if (game.status !== "on" || game.bros[broNum - 1] == null) return;
+    const bomb = game.plantBomb(broNum);
+    if (bomb == null) return;
+    sendMap();
+    setTimeout(() => {
+      const flame = game.explodeBomb(bomb);
+      sendMap();
+      lag(flame);
+    }, 3000);
+  });
 
-	socket.on('plant', function() {
-		if (game.status === "on") {
-			if (game.bros[broNum-1] != null) {
-				const bomb = game.plantBomb(broNum);
-				if (bomb != null) {
-					send_map();
-					return setTimeout(( () => {
-						const flame = game.explodeBomb(bomb);
-						send_map();
-						return lag(flame);
-					}
-					), 3000);
-				}
-			}
-		}
-	});
+  // drop this player; tear the game down once everyone has left
+  const handleLeave = () => {
+    if (!game) return;
+    game.leave(broNum);
+    for (const bro of game.bros) {
+      if (bro != null) return sendMap();
+    }
+    delete games[game.name];
+  };
 
-	socket.on('quit', function() {
-		if (game) {
-			game.leave(broNum);
-			for (var bro of Array.from(game.bros)) {
-				if (bro != null) { return send_map(); }
-			}
-			return delete games[game.name];
-		}
-});
-
-	return socket.on('disconnect', function() {
-		if (game) {
-			game.leave(broNum);
-			for (var bro of Array.from(game.bros)) {
-				if (bro != null) { return send_map(); }
-			}
-			return delete games[game.name];
-		}
-});
+  socket.on('quit', handleLeave);
+  socket.on('disconnect', handleLeave);
 });
