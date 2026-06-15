@@ -1,7 +1,7 @@
 <!DOCTYPE html>
 <html>
 <head>
-<script src="/socket.io/socket.io.js"></script>
+<script src="https://unpkg.com/colyseus.js@^0.16.0/dist/colyseus.js"></script>
 <script src="https://ajax.googleapis.com/ajax/libs/jquery/1.10.2/jquery.min.js"></script>
 <script src="//netdna.bootstrapcdn.com/twitter-bootstrap/2.3.2/js/bootstrap.min.js"></script>
 <link href="//netdna.bootstrapcdn.com/twitter-bootstrap/2.3.2/css/bootstrap-combined.min.css" rel="stylesheet">
@@ -93,29 +93,14 @@
 		"<span class='label label-important'>P4: </span>",
 	];
 
-	const socket = io();
+	const client = new Colyseus.Client(`ws://${location.host}`);
+	let room = null;
 
-	socket.on('game_list', function(data) {
-		console.debug(data);
-		const list = JSON.parse(data.list);
-		$("#games").html("");
-		if (list.length === 0) {
-			$("#games").append("<option disabled='disabled'>No games. Create one!</option>");
-		} else {
-			for (const item of list) {
-				$("#games").append(`<option>${item}</option>`);
-			}
-		}
-	});
-
-	socket.on('start_game', () => $('.modal-footer .btn').hide());
-
-	socket.on('game_map', function(data) {
-		const game = JSON.parse(data.game);
-
+	// render the whole board from a Colyseus state snapshot
+	function render(state) {
 		// draw the map tiles
 		let xpos = 0, ypos = 0;
-		for (const tile of game.map) {
+		state.map.forEach(function(tile) {
 			if (tile === "X") {
 				ctx.drawImage(images.cube, xpos, ypos, 50, 50);
 			} else if (tile === "C") {
@@ -128,80 +113,105 @@
 			} else {
 				xpos += 50;
 			}
-		}
+		});
 
 		// draw bros and their life stats
 		$("#stats").html('');
-		for (let i = 0; i < game.bros.length; i++) {
-			const bro = game.bros[i];
+		state.bros.forEach(function(bro, i) {
 			$("#stats").append(PLAYER_LABELS[i]);
-			if (bro === null || bro.life <= 0) {
+			if (!bro.active || bro.life <= 0) {
 				$("#stats").append(" <i class='icon-remove'></i> ");
-				continue;
+				return;
 			}
 			for (let heart = 1; heart <= bro.life; heart++) {
 				$("#stats").append(" <i class='icon-heart'></i> ");
 			}
 			ctx.drawImage(images[`bro_${bro.playerNum}_${bro.direction}`], bro.x * 50, bro.y * 50, 50, 50);
-		}
+		});
 
 		// draw drops
-		for (const drop of game.drops) {
+		state.drops.forEach(function(drop) {
 			if (drop.type === "flame") {
 				ctx.drawImage(images.drop_flame, drop.x * 50, drop.y * 50, 50, 50);
 			} else if (drop.type === "bomb") {
 				ctx.drawImage(images.drop_bomb, drop.x * 50, drop.y * 50, 50, 50);
 			}
-		}
+		});
 
 		// draw bombs
-		for (const key in game.bombs) {
-			const bomb = game.bombs[key];
+		state.bombs.forEach(function(bomb) {
 			ctx.drawImage(images.bomb, bomb.x * 50, bomb.y * 50, 50, 50);
-		}
+		});
 
 		// draw flames
-		for (const key in game.flames) {
-			for (const [x, y] of game.flames[key]) {
-				ctx.drawImage(images.flame, x * 50, y * 50, 50, 50);
-			}
-		}
-	});
+		state.flames.forEach(function(flame) {
+			flame.points.forEach(function(p) {
+				ctx.drawImage(images.flame, p.x * 50, p.y * 50, 50, 50);
+			});
+		});
+	}
+
+	// wire up a freshly joined/created room and open the game modal
+	function enterRoom(joined) {
+		room = joined;
+		$('.modal-footer .btn').show();
+		room.onStateChange(render);
+		room.onMessage("start_game", () => $('.modal-footer .btn').hide());
+		room.onError((code, message) => console.error("room error", code, message));
+		$(".modal").modal({ backdrop: "static" });
+	}
 
 	function create_game() {
 		const name = $("#input_create").val();
 		$("#input_create").val("");
-		socket.emit('create_game', { name });
-		$(".modal").modal({ backdrop: "static" });
+		client.create("bomber", { name }).then(enterRoom)
+			.catch((e) => console.error("create failed", e));
 	}
 
 	function join_game() {
-		const name = $("#games").val();
-		socket.emit('join_game', { name });
-		$(".modal").modal({ backdrop: "static" });
+		const roomId = $("#games").val();
+		if (!roomId) return;
+		client.joinById(roomId).then(enterRoom)
+			.catch((e) => console.error("join failed", e));
 	}
 
 	function fetch_games() {
-		socket.emit('fetch_games', {});
+		client.getAvailableRooms("bomber").then(function(rooms) {
+			console.debug(rooms);
+			$("#games").html("");
+			if (rooms.length === 0) {
+				$("#games").append("<option disabled='disabled'>No games. Create one!</option>");
+			} else {
+				for (const r of rooms) {
+					const name = (r.metadata && r.metadata.name) || r.roomId;
+					$("#games").append(`<option value="${r.roomId}">${name}</option>`);
+				}
+			}
+		});
 	}
 
 	function start_game() {
-		socket.emit('start_game', {});
+		if (room) room.send("start");
 	}
 
+	// show the lobby list on load
+	fetch_games();
+
 	$(document).keyup(function(event) {
+		if (!room) return;
 		const direction = { 37: "left", 38: "up", 39: "right", 40: "down" }[event.which] || "";
 		if (direction) {
 			event.preventDefault();
-			socket.emit('move', { direction });
+			room.send("move", { direction });
 		} else if (event.which === 32) {
 			event.preventDefault();
-			socket.emit('plant', {});
+			room.send("plant");
 		} else if (event.which === 27) {
 			event.preventDefault();
-			socket.emit('fetch_games', {});
 			$(".modal").modal("hide");
-			socket.emit('quit', {});
+			room.leave();
+			room = null;
+			fetch_games();
 		}
 	});
 

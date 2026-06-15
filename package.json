@@ -1,17 +1,16 @@
 {
     "name": "bomberbros",
     "version": "0.0.1",
-    "scripts":
-    {
-        "start": "node server.js"
+    "scripts": {
+        "start": "node server.js",
+        "test": "node test.js"
     },
-    "dependencies":
-    {
-        "socket.io": "^4.8.1",
-        "express": "^4.21.2"
-    },
-    "engines":
-    {
+    "engines": {
         "node": ">=18"
+    },
+    "dependencies": {
+        "@colyseus/schema": "^3.0.76",
+        "@colyseus/uwebsockets-transport": "^0.16.10",
+        "colyseus": "^0.16.5"
     }
 }

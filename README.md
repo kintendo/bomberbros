@@ -6,8 +6,8 @@ bomberman clone deployed @ heroku: http://bomberbros-kintendo.herokuapp.com
 Stack
 -----
 * node.js
-* express framework
-* socket.io
+* colyseus (game server framework)
+* uWebSockets.js (transport)
 * canvas
 
 
