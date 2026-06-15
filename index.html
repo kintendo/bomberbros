@@ -178,18 +178,17 @@
 	}
 
 	function fetch_games() {
-		client.getAvailableRooms("bomber").then(function(rooms) {
+		fetch("/rooms").then((r) => r.json()).then(function(rooms) {
 			console.debug(rooms);
 			$("#games").html("");
 			if (rooms.length === 0) {
 				$("#games").append("<option disabled='disabled'>No games. Create one!</option>");
 			} else {
 				for (const r of rooms) {
-					const name = (r.metadata && r.metadata.name) || r.roomId;
-					$("#games").append(`<option value="${r.roomId}">${name}</option>`);
+					$("#games").append(`<option value="${r.roomId}">${r.name}</option>`);
 				}
 			}
-		});
+		}).catch((e) => console.error("fetch games failed", e));
 	}
 
 	function start_game() {

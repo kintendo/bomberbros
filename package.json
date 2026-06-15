@@ -3,7 +3,8 @@
     "version": "0.0.1",
     "scripts": {
         "start": "node server.js",
-        "test": "node test.js"
+        "test": "node test.js",
+        "test:e2e": "node e2e.js"
     },
     "engines": {
         "node": ">=18"
@@ -12,5 +13,9 @@
         "@colyseus/schema": "^3.0.76",
         "@colyseus/uwebsockets-transport": "^0.16.10",
         "colyseus": "^0.16.5"
+    },
+    "devDependencies": {
+        "colyseus.js": "^0.16.22",
+        "ws": "^8.21.0"
     }
 }
