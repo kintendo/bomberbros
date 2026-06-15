@@ -93,7 +93,9 @@
 		"<span class='label label-important'>P4: </span>",
 	];
 
-	const client = new Colyseus.Client(`ws://${location.host}`);
+	// use wss:// when the page is served over https (e.g. on Render), ws:// locally
+	const wsProtocol = location.protocol === "https:" ? "wss:" : "ws:";
+	const client = new Colyseus.Client(`${wsProtocol}//${location.host}`);
 	let room = null;
 
 	// render the whole board from a Colyseus state snapshot
