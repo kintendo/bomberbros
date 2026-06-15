@@ -1,110 +1,34 @@
-// sends index.html to each connection
+// Colyseus game server on the uWebSockets.js transport.
+// The transport's express-compatible app serves the client and image assets,
+// so HTTP and the realtime WebSocket share a single port.
 // ==============================================================================
-const http = require('http');
-const express = require('express');
-const { Server } = require('socket.io');
+const path = require('path');
+const { Server, matchMaker } = require('colyseus');
+const { uWebSocketsTransport } = require('@colyseus/uwebsockets-transport');
+const { BomberRoom } = require('./rooms/BomberRoom');
 
-const app = express();
-const server = http.createServer(app);
-const io = new Server(server);
+const transport = new uWebSocketsTransport();
 
-app.get('/', (req, res) => res.sendFile(__dirname + '/index.html'));
-app.use('/images', express.static(__dirname + '/images'));
+// static assets
+const http = transport.expressApp;
+http.get('/', (req, res) => res.sendFile(path.join(__dirname, 'index.html')));
+http.get('/images/:file', (req, res) => res.sendFile(path.join(__dirname, 'images', req.params.file)));
 
-server.listen(process.env.PORT || 5000);
-
-// logic accessible by all sockets
-// ==============================================================================
-const Game = require('./game');
-const games = {};
-
-io.on('connection', (socket) => {
-  let game = "";
-  let broNum = 0;
-
-  const sendGameList = () => {
-    socket.emit('game_list', { list: JSON.stringify(Object.keys(games)) });
-  };
-
-  const sendMap = () => {
-    io.in(game.name).emit('game_map', { game: JSON.stringify(game) });
-  };
-
-  // clear a bomb's flames shortly after it goes off, then redraw
-  const lag = (flame) => {
-    setTimeout(() => {
-      game.flameOff(flame);
-      sendMap();
-    }, 500);
-  };
-
-  sendGameList();
-
-  socket.on('create_game', (data) => {
-    if (games[data.name]) {
-      socket.emit('error', { message: "already exists" });
-      return;
-    }
-    game = games[data.name] = new Game(data.name);
-    broNum = game.addBro();
-    socket.join(game.name);
-    sendMap();
-  });
-
-  socket.on('join_game', (data) => {
-    if (!games[data.name]) {
-      socket.emit('error', { message: "doesn't exist" });
-      return;
-    }
-    game = games[data.name];
-    broNum = game.addBro();
-    if (!broNum) {
-      socket.emit('error', { message: "game full" });
-      return;
-    }
-    socket.join(game.name);
-    if (game.status === "on") {
-      socket.emit('start_game', {});
-    }
-    sendMap();
-  });
-
-  socket.on('fetch_games', () => sendGameList());
-
-  socket.on('start_game', () => {
-    game.status = "on";
-    io.in(game.name).emit('start_game', {});
-  });
-
-  socket.on('move', (data) => {
-    if (game.status === "on" && game.bros[broNum - 1] != null) {
-      game.moveBro(broNum, data.direction);
-      sendMap();
-    }
-  });
-
-  socket.on('plant', () => {
-    if (game.status !== "on" || game.bros[broNum - 1] == null) return;
-    const bomb = game.plantBomb(broNum);
-    if (bomb == null) return;
-    sendMap();
-    setTimeout(() => {
-      const flame = game.explodeBomb(bomb);
-      sendMap();
-      lag(flame);
-    }, 3000);
-  });
-
-  // drop this player; tear the game down once everyone has left
-  const handleLeave = () => {
-    if (!game) return;
-    game.leave(broNum);
-    for (const bro of game.bros) {
-      if (bro != null) return sendMap();
-    }
-    delete games[game.name];
-  };
-
-  socket.on('quit', handleLeave);
-  socket.on('disconnect', handleLeave);
+// lobby listing for the client (colyseus.js 0.16 has no getAvailableRooms)
+http.get('/rooms', async (req, res) => {
+  const rooms = await matchMaker.query({ name: 'bomber' });
+  res.json(rooms.map((r) => ({
+    roomId: r.roomId,
+    name: (r.metadata && r.metadata.name) || r.roomId,
+    clients: r.clients,
+    maxClients: r.maxClients,
+    locked: r.locked,
+  })));
 });
+
+const gameServer = new Server({ transport });
+gameServer.define('bomber', BomberRoom);
+
+const listening = gameServer.listen(process.env.PORT || 5000);
+
+module.exports = { gameServer, listening };

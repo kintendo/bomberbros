@@ -1,14 +1,37 @@
 Bomber Bros
 ===========
 
-bomberman clone deployed @ heroku: http://bomberbros-kintendo.herokuapp.com
+bomberman clone — node/colyseus/canvas
 
 Stack
 -----
 * node.js
-* express framework
-* socket.io
+* colyseus (game server framework)
+* uWebSockets.js (transport)
 * canvas
+
+
+Run locally
+-----------
+* `npm install`
+* `npm start` (listens on `$PORT`, default 5000)
+* open `http://localhost:5000`
+* `npm test` runs the game-logic + schema-sync tests
+
+
+Deploy (Render)
+---------------
+The Colyseus server also serves the client, so it deploys as a single
+persistent web service (Render supports WebSockets on all plans):
+
+* push this repo to GitHub
+* Render Dashboard -> New -> Blueprint -> select the repo (uses `render.yaml`)
+* or create a Web Service manually: build `npm install`, start `npm start`
+
+Render injects `PORT` and terminates TLS, so the client connects over
+`wss://` automatically. Note: this needs a persistent host — it will not
+run on serverless platforms (Vercel/Netlify/Lambda), which don't keep
+WebSocket servers alive.
 
 
 Game Features
