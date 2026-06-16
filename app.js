@@ -29,6 +29,17 @@ http.get('/rooms', async (req, res) => {
 const gameServer = new Server({ transport });
 gameServer.define('bomber', BomberRoom);
 
-const listening = gameServer.listen(process.env.PORT || 5000);
+// 2567 is Colyseus's conventional port; avoids the macOS AirPlay clash on 5000.
+const port = Number(process.env.PORT) || 2567;
+const listening = gameServer.listen(port).then(() => {
+  // the uWS transport reports "listening" even when the bind fails, so check
+  // the socket ourselves and fail loudly instead of hanging silently.
+  if (!transport._listeningSocket) {
+    console.error(`\n✗ Could not bind port ${port} — already in use? ` +
+      `(macOS AirPlay Receiver uses 5000.) Try: PORT=<free port> npm start\n`);
+    process.exit(1);
+  }
+  console.log(`\n▶ Bomber Bros running — open http://localhost:${port}\n`);
+});
 
 module.exports = { gameServer, listening };
