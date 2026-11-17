@@ -14,8 +14,8 @@ Stack
 Run locally
 -----------
 * `npm install`
-* `npm start` (listens on `$PORT`, default 5000)
-* open `http://localhost:5000`
+* `npm start` (listens on `$PORT`, default 2567)
+* open `http://localhost:2567`
 * `npm test` runs the game-logic + schema-sync tests
 
 
